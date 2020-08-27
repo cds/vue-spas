@@ -7,6 +7,30 @@
                 :key="item.id">
                 <div class="card">
                     <div class="card-body px-3 py-2 d-flex align-items-center justify-content-center">
+                        <div class="btn-group pr-2"
+                             v-if="user !== null && user.uid == userID">
+                            <button class="btn btn-sm"
+                                    :class="[
+                                        item.star ? 'text-danger': '','btn-outline-secondary'
+                                    ]"
+                                    title="Give user a Star"
+                                    @click="toggleStar(item.id)"
+                            >
+                                <font-awesome-icon icon="star"></font-awesome-icon>
+                            </button>
+                            <a class="btn btn-sm btn-outline-secondary"
+                               title="Send user aa Email"
+                               :href="'mailto:'+ item.eMail"
+                            >
+                                <font-awesome-icon icon="envelope"></font-awesome-icon>
+                            </a>
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    title="Delete Attendee"
+                                    @click="deleteAttendee(item.id)"
+                            >
+                                <font-awesome-icon icon="trash"></font-awesome-icon>
+                            </button>
+                        </div>
                         <div>{{ item.displayName }}</div>
                     </div>
                 </div>
@@ -16,6 +40,7 @@
 </template>
 
 <script>
+import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
 import db from "../db.js";
 
 export default {
@@ -23,12 +48,54 @@ export default {
     data: function () {
         return {
             attendees: [],
-            userId: this.$route.params.userID,
+            userID: this.$route.params.userID,
             meetingID: this.$route.params.meetingID
         };
     },
+    components: {
+        FontAwesomeIcon
+    },
+    methods: {
+        toggleStar: function (attendeeID) {
+            if (this.user && this.user.uid == this.userID) {
+                const ref = db
+                    .collection("users")
+                    .doc(this.user.uid)
+                    .collection("meetings")
+                    .doc(this.meetingID)
+                    .collection("attendees")
+                    .doc(attendeeID);
+
+                ref.get().then(doc => {
+                    const star = doc.data().star;
+                    if (star) {
+                        ref.update({
+                            star: !star
+                        });
+                    } else {
+                        ref.update({
+                            star: true
+                        });
+                    }
+                });
+            }
+        },
+        deleteAttendee: function (attendeeID) {
+            if (this.user && this.user.uid == this.userID) {
+                db.collection("users")
+                    .doc(this.user.uid)
+                    .collection("meetings")
+                    .doc(this.meetingID)
+                    .collection("attendees")
+                    .doc(attendeeID)
+                    .delete();
+            }
+        }
+    },
+    props: ["user"],
     mounted() {
-        db.collection("users").doc(this.userId)
+        db.collection("users")
+            .doc(this.userID)
             .collection("meetings")
             .doc(this.meetingID)
             .collection('attendees')
@@ -39,6 +106,7 @@ export default {
                         id: doc.id,
                         eMail: doc.data().eMail,
                         displayName: doc.data().displayName,
+                        star: doc.data().star
                     });
                 });
                 this.attendees = snapData;

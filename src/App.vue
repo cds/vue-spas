@@ -69,7 +69,7 @@ export default {
                         .collection("attendees")
                         .add({
                             displayName: payload.displayName,
-                            eMial: payload.eMail,
+                            eMail: payload.eMail,
                             createdAt: Firebase.firestore.FieldValue.serverTimestamp()
                         }).then(() => this.$router.push("/"));
                 } else {
